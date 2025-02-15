@@ -42,6 +42,9 @@
 
 This boilerplate is a pre-configured, ready-to-deploy solution for Payload CMS as a website builder. It includes a fully-working backend, enterprise-grade admin panel, and a beautifully designed, production-ready website. This template is optimized for seamless deployment on [Railway](https://railway.app?referralCode=-Yg50p), and uses PostgreSQL for both local development and production environments.
 
+## Payload Version
+`3.23.0` updated 15 Feb. 2025
+
 ## Preconfigured Features & Integrations
 
 - **Authentication**: Robust user authentication system
