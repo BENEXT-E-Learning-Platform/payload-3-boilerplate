@@ -79,7 +79,7 @@ export default buildConfig({
         media:true,
 
       },
-      bucket: process.env.S3_BUCKET || '',
+      bucket: process.env.MINIO_BUCKET || '',
       config: {
         credentials: {
           accessKeyId: process.env.MINIO_ROOT_USER ||'',
