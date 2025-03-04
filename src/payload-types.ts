@@ -72,6 +72,8 @@ export interface Config {
     categories: Category;
     users: User;
     comments: Comment;
+    courses: Course;
+    instructors: Instructor;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -88,6 +90,8 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
+    courses: CoursesSelect<false> | CoursesSelect<true>;
+    instructors: InstructorsSelect<false> | InstructorsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -228,56 +232,6 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
-  sizes?: {
-    thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    square?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    small?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    medium?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    large?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    xlarge?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -483,6 +437,7 @@ export interface Post {
 export interface User {
   id: number;
   name?: string | null;
+  role: 'admin' | 'user';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -694,7 +649,7 @@ export interface Form {
   createdAt: string;
 }
 /**
- * Comments submitted by visitors on blog posts
+ * User comments on lessons (pending approval)
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments".
@@ -702,16 +657,119 @@ export interface Form {
 export interface Comment {
   id: number;
   content: string;
-  author: {
-    name: string;
-    email: string;
-  };
-  post: number | Post;
   /**
-   * Comments must be approved before they appear publicly
+   * The course containing the lesson
    */
-  isApproved?: boolean | null;
-  publishedAt?: string | null;
+  course: number | Course;
+  /**
+   * Path to the lesson (e.g., "sections[0].lessons[1]")
+   */
+  lessonPath: string;
+  /**
+   * Set to Approved to publish the comment
+   */
+  status: 'pending' | 'approved';
+  createdBy: number | User;
+  postedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Create and manage courses for the LMS
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courses".
+ */
+export interface Course {
+  id: number;
+  title: string;
+  description?: string | null;
+  /**
+   * Select the instructor for this course
+   */
+  instructor: number | Instructor;
+  sections?:
+    | {
+        title: string;
+        description?: string | null;
+        order: number;
+        lessons?:
+          | {
+              title: string;
+              description?: string | null;
+              order: number;
+              contentItems?:
+                | (
+                    | {
+                        title: string;
+                        description?: string | null;
+                        videoFile: number | Media;
+                        duration?: number | null;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'videoContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        pdfFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'pdfContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        excelFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'excelContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        docFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'docContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        imageFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'imageContent';
+                      }
+                  )[]
+                | null;
+              /**
+               * Approved comments for this lesson (managed in Comments collection)
+               */
+              comments?: (number | Comment)[] | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  createdBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Instructors for LMS courses
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "instructors".
+ */
+export interface Instructor {
+  id: number;
+  name: string;
+  description?: string | null;
+  email: string;
+  photo?: (number | null) | Media;
+  createdBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -818,6 +876,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'comments';
         value: number | Comment;
+      } | null)
+    | ({
+        relationTo: 'courses';
+        value: number | Course;
+      } | null)
+    | ({
+        relationTo: 'instructors';
+        value: number | Instructor;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1060,70 +1126,6 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
-  sizes?:
-    | T
-    | {
-        thumbnail?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        square?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        small?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        medium?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        large?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        xlarge?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1149,6 +1151,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1165,15 +1168,103 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface CommentsSelect<T extends boolean = true> {
   content?: T;
-  author?:
+  course?: T;
+  lessonPath?: T;
+  status?: T;
+  createdBy?: T;
+  postedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courses_select".
+ */
+export interface CoursesSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  instructor?: T;
+  sections?:
     | T
     | {
-        name?: T;
-        email?: T;
+        title?: T;
+        description?: T;
+        order?: T;
+        lessons?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              order?: T;
+              contentItems?:
+                | T
+                | {
+                    videoContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          videoFile?: T;
+                          duration?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    pdfContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          pdfFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    excelContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          excelFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    docContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          docFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    imageContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          imageFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                  };
+              comments?: T;
+              id?: T;
+            };
+        id?: T;
       };
-  post?: T;
-  isApproved?: T;
-  publishedAt?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "instructors_select".
+ */
+export interface InstructorsSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  email?: T;
+  photo?: T;
+  createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

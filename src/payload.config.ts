@@ -19,6 +19,8 @@ import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 
 import { s3Storage } from '@payloadcms/storage-s3'
+import { Courses } from './collections/Courses'
+import { Instructors } from './collections/Instructors'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -67,7 +69,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, Posts, Media, Categories, Users, Comments],
+  collections: [Pages, Posts, Media, Categories, Users, Comments,Courses,Instructors],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins: [
