@@ -18,6 +18,8 @@ import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 
+import { s3Storage } from '@payloadcms/storage-s3'
+
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
@@ -71,6 +73,25 @@ export default buildConfig({
   plugins: [
     ...plugins,
     // storage-adapter-placeholder
+    
+    s3Storage({
+      collections: {
+        media:true,
+
+      },
+      bucket: process.env.S3_BUCKET || '',
+      config: {
+        credentials: {
+          accessKeyId: process.env.MINIO_ROOT_USER ||'',
+          secretAccessKey: process.env.MINIO_ROOT_PASSWORD || '',
+        },
+        region: process.env.MINIO_REGION || 'us-east-1',
+        endpoint: process.env.MINIO_PUBLIC_ENDPOINT || '', 
+        forcePathStyle: true, // Required for MinIO       // ... Other S3 configuration
+      },
+      
+    }),
+  
   ],
   endpoints: [
     {
