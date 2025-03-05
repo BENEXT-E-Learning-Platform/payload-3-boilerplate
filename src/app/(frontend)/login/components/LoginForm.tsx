@@ -2,7 +2,7 @@
 import React, { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import payload from '@payloadcms/payload';
+import  {login} from "../actions/login";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,12 +19,12 @@ export default function LoginForm() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const result = await payload.login({ email, password });
+    const result = await login({ email, password });
     setIsPending(false);
     if (result.success) {
       router.push("/dashboard");
     } else {
-      setError(result.error);
+      setError(result.error || null);
       setIsPending(false);
     }
   }
