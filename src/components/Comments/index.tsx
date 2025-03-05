@@ -34,7 +34,6 @@ export const Comments: React.FC<Props> = async ({ postId, className }) => {
       <div className="space-y-4 mb-8">
         {(comments as Comment[]).map((comment) => (
           <div key={comment.id} className="p-4 border rounded">
-            <div className="font-medium">{comment.author?.name}</div>
             <div className="text-sm text-gray-500 mb-2">
               {new Date(comment.createdAt).toLocaleDateString()}
             </div>

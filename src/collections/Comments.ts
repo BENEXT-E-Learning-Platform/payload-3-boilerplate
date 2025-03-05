@@ -1,19 +1,17 @@
-import { CollectionConfig } from 'payload'
-import { authenticatedOrPublished } from '../access/authenticatedOrPublished'
-import { authenticated } from '../access/authenticated'
-import { isProduction, isSuperAdmin } from '@/access/IsUserRole'
+import { authenticated } from '@/access/authenticated';
+import { CollectionConfig } from 'payload';
 
 export const Comments: CollectionConfig = {
   slug: 'comments',
   admin: {
-    defaultColumns: ['content', 'author', 'post', 'isApproved', 'createdAt'],
-    description: 'Comments submitted by visitors on blog posts',
+    useAsTitle: 'content',
+    description: 'User comments on lessons (pending approval)',
   },
   access: {
-    read: isSuperAdmin || isProduction || authenticatedOrPublished,
-    create: () => true,
-    update: isSuperAdmin || isProduction,
-    delete: isSuperAdmin || isProduction
+    read: () => true,
+    create: authenticated,
+    update: authenticated,
+    delete:authenticated,
   },
   fields: [
     {
@@ -21,69 +19,57 @@ export const Comments: CollectionConfig = {
       type: 'textarea',
       required: true,
       label: 'Comment',
-      validate: (value: string | undefined) => {
-        if (!value || value.length > 2000) return 'Comments cannot be longer than 2000 characters'
-        return true
-      }
     },
     {
-      name: 'author',
-      type: 'group',
-      fields: [
-        {
-          name: 'name',
-          type: 'text',
-          required: true,
-          maxLength: 100
-        },
-        {
-          name: 'email',
-          type: 'email',
-          required: true
-        }
-      ]
-    },
-    {
-      name: 'post',
+      name: 'course',
       type: 'relationship',
-      relationTo: 'posts',
+      relationTo: 'courses',
       required: true,
-      hasMany: false,
-      admin: {
-        position: 'sidebar'
-      }
+      label: 'Course',
+      admin: { description: 'The course containing the lesson' },
     },
     {
-      name: 'isApproved',
-      type: 'checkbox',
-      defaultValue: false,
-      admin: {
-        position: 'sidebar',
-        description: 'Comments must be approved before they appear publicly'
-      }
+      name: 'lessonPath',
+      type: 'text',
+      required: true,
+      label: 'Lesson Path',
+      admin: { description: 'Path to the lesson (e.g., "sections[0].lessons[1]")' },
     },
     {
-      name: 'publishedAt',
+      name: 'status',
+      type: 'select',
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Approved', value: 'approved' },
+      ],
+      defaultValue: 'pending',
+      required: true,
+      label: 'Status',
+      admin: { description: 'Set to Approved to publish the comment' },
+    },
+    {
+      name: 'createdBy',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      access: { update: () => false },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'postedAt',
       type: 'date',
-      admin: {
-        position: 'sidebar',
-        date: {
-          pickerAppearance: 'dayAndTime'
-        }
-      },
-      hooks: {
-        beforeChange: [
-          ({ siblingData, value }) => {
-            if (siblingData.isApproved && !value) {
-              return new Date()
-            }
-            return value
-          }
-        ]
-      }
-    }
+      admin: { date: { pickerAppearance: 'dayAndTime' } },
+      defaultValue: () => new Date().toISOString(),
+    },
   ],
-  timestamps: true
-}
-
-
+  hooks: {
+    beforeChange: [
+      ({ req, data }) => {
+        if (req.user && !data.createdBy) {
+          data.createdBy = req.user.id;
+        }
+        return data;
+      },
+    ],
+  },
+};

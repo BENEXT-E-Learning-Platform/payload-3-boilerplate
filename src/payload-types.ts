@@ -74,6 +74,8 @@ export interface Config {
     users: User;
     comments: Comment;
     clients: Client;
+    courses: Course;
+    instructors: Instructor;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -91,6 +93,8 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
+    courses: CoursesSelect<false> | CoursesSelect<true>;
+    instructors: InstructorsSelect<false> | InstructorsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -720,7 +724,7 @@ export interface Form {
   createdAt: string;
 }
 /**
- * Comments submitted by visitors on blog posts
+ * User comments on lessons (pending approval)
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments".
@@ -728,16 +732,119 @@ export interface Form {
 export interface Comment {
   id: number;
   content: string;
-  author: {
-    name: string;
-    email: string;
-  };
-  post: number | Post;
   /**
-   * Comments must be approved before they appear publicly
+   * The course containing the lesson
    */
-  isApproved?: boolean | null;
-  publishedAt?: string | null;
+  course: number | Course;
+  /**
+   * Path to the lesson (e.g., "sections[0].lessons[1]")
+   */
+  lessonPath: string;
+  /**
+   * Set to Approved to publish the comment
+   */
+  status: 'pending' | 'approved';
+  createdBy: number | User;
+  postedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Create and manage courses for the LMS
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courses".
+ */
+export interface Course {
+  id: number;
+  title: string;
+  description?: string | null;
+  /**
+   * Select the instructor for this course
+   */
+  instructor: number | Instructor;
+  sections?:
+    | {
+        title: string;
+        description?: string | null;
+        order: number;
+        lessons?:
+          | {
+              title: string;
+              description?: string | null;
+              order: number;
+              contentItems?:
+                | (
+                    | {
+                        title: string;
+                        description?: string | null;
+                        videoFile: number | Media;
+                        duration?: number | null;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'videoContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        pdfFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'pdfContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        excelFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'excelContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        docFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'docContent';
+                      }
+                    | {
+                        title: string;
+                        description?: string | null;
+                        imageFile: number | Media;
+                        id?: string | null;
+                        blockName?: string | null;
+                        blockType: 'imageContent';
+                      }
+                  )[]
+                | null;
+              /**
+               * Approved comments for this lesson (managed in Comments collection)
+               */
+              comments?: (number | Comment)[] | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  createdBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Instructors for LMS courses
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "instructors".
+ */
+export interface Instructor {
+  id: number;
+  name: string;
+  description?: string | null;
+  email: string;
+  photo?: (number | null) | Media;
+  createdBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -922,6 +1029,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clients';
         value: number | Client;
+      } | null)
+    | ({
+        relationTo: 'courses';
+        value: number | Course;
+      } | null)
+    | ({
+        relationTo: 'instructors';
+        value: number | Instructor;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1280,15 +1395,11 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface CommentsSelect<T extends boolean = true> {
   content?: T;
-  author?:
-    | T
-    | {
-        name?: T;
-        email?: T;
-      };
-  post?: T;
-  isApproved?: T;
-  publishedAt?: T;
+  course?: T;
+  lessonPath?: T;
+  status?: T;
+  createdBy?: T;
+  postedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1335,6 +1446,98 @@ export interface ClientsSelect<T extends boolean = true> {
   hash?: T;
   loginAttempts?: T;
   lockUntil?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courses_select".
+ */
+export interface CoursesSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  instructor?: T;
+  sections?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        order?: T;
+        lessons?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              order?: T;
+              contentItems?:
+                | T
+                | {
+                    videoContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          videoFile?: T;
+                          duration?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    pdfContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          pdfFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    excelContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          excelFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    docContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          docFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                    imageContent?:
+                      | T
+                      | {
+                          title?: T;
+                          description?: T;
+                          imageFile?: T;
+                          id?: T;
+                          blockName?: T;
+                        };
+                  };
+              comments?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "instructors_select".
+ */
+export interface InstructorsSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  email?: T;
+  photo?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
